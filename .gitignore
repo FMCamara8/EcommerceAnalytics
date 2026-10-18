@@ -1,0 +1,8 @@
+# Imposés par le sujet
+target/
+project/target/
+.idea/
+
+# Fichiers créés automatiquement par sbt
+project/project/
+.bsp/
