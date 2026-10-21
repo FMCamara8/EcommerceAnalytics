@@ -6,3 +6,4 @@ project/target/
 # Fichiers créés automatiquement par sbt
 project/project/
 .bsp/
+output/

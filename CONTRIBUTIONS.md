@@ -16,5 +16,10 @@
 ## Charge de travail et difficultés
 
 ## Décisions techniques du groupe
+### Chemins des données
+Les chemins sont relatifs à la racine du projet (src/main/resources/data/...), car Spark
+ne peut pas lire un fichier placé à l'intérieur du JAR. Le programme se lance donc depuis
+la racine du projet. Chaque chemin peut être remplacé au lancement avec -Dcle=valeur,
+sans recompiler.
 
 ## Relectures
