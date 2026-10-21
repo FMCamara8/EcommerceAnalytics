@@ -1,5 +1,4 @@
 package com.ecommerce.analytics
-// Propriétaire : FMC (membre A). Fichier de test, à supprimer avant le rendu
 
 import org.apache.spark.sql.SparkSession
 import com.ecommerce.utils.ConfigLoader
@@ -10,36 +9,37 @@ object TestFMC {
       .appName("TestFMC")
       .master(ConfigLoader.sparkMaster)
       .getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")   // moins de lignes rouges dans la console
+    spark.sparkContext.setLogLevel("WARN")
 
     try {
       val ingestion  = new DataIngestion(spark)
       val validation = new DataValidation(spark)
 
-      ingestion.safeLoad("transactions")(ingestion.readTransactions()).foreach { ds =>
-        ds.printSchema()
-        ds.show(5)
-        val (ok, ko) = validation.validateTransactions(ds)
-        ko.groupBy("rejection_reason").count().show(false)
-      }
+      for {
+        tx <- ingestion.safeLoad("transactions")(ingestion.readTransactions())
+        us <- ingestion.safeLoad("users")(ingestion.readUsers())
+        pr <- ingestion.safeLoad("products")(ingestion.readProducts())
+        me <- ingestion.safeLoad("merchants")(ingestion.readMerchants())
+      } {
+        val (txOk, txKo) = validation.validateTransactions(tx)
+        val (usOk, usKo) = validation.validateUsers(us)
+        val (prOk, prKo) = validation.validateProducts(pr)
+        val (meOk, meKo) = validation.validateMerchants(me)
 
-      ingestion.safeLoad("users")(ingestion.readUsers()).foreach { ds =>
-        ds.printSchema()
-        ds.show(5, truncate = false)
-        val (ok, ko) = validation.validateUsers(ds)
-        ko.groupBy("rejection_reason").count().show(false)
-      }
+        val report = validation.qualityReport(Seq(
+          ("transactions", tx, txOk, txKo),
+          ("users",        us, usOk, usKo),
+          ("products",     pr, prOk, prKo),
+          ("merchants",    me, meOk, meKo)
+        ))
+        report.show(false)
+        validation.saveQualityReport(report)
 
-      ingestion.safeLoad("products")(ingestion.readProducts()).foreach { ds =>
-        ds.printSchema()
-        val (ok, ko) = validation.validateProducts(ds)
-        ko.groupBy("rejection_reason").count().show(false)
-      }
-
-      ingestion.safeLoad("merchants")(ingestion.readMerchants()).foreach { ds =>
-        ds.printSchema()
-        val (ok, ko) = validation.validateMerchants(ds)
-        ko.show(false)
+        validation.saveRejected("transactions", txKo)
+        validation.saveRejected("users", usKo)
+        validation.saveRejected("products", prKo)
+        validation.saveRejected("merchants", meKo)
+        println(s"Rapport et rejets écrits dans ${ConfigLoader.outputPath}")
       }
     } finally {
       spark.stop()
