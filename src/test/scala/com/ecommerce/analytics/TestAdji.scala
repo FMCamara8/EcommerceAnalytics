@@ -1,5 +1,5 @@
 package com.ecommerce.analytics
-// Propriétaire : Adji (membre B). Fichier de test, rangé dans src/test/scala (hors du JAR)
+//Fichier de test, rangé dans src/test/scala (hors du JAR)
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.col
