@@ -34,3 +34,32 @@ sans recompiler.
   six colonnes nulles sans faire échouer le job (700 cas dans le fichier brut).
 - La structure rendue par l'UDF est dépliée en six colonnes simples, car le CSV ne sait pas
   écrire une structure.
+
+### Journal de Spark 
+- Fichier log4j2.properties dans src/main/resources, niveau WARN : les ~40 lignes INFO
+  du démarrage disparaissent. setLogLevel("WARN") seul ne suffit pas, car il s'exécute
+  après la création de la session, quand ces lignes sont déjà écrites.
+- Le message ERROR de ShutdownHookManager (dossier temporaire non effacé sous Windows)
+  est éteint : défaut connu, sans effet sur les résultats. Les autres erreurs restent visibles.
+
+### Jointures de la question 3.2 
+- transactions : table de départ, une ligne par achat valide (136 157).
+- users : left. L'achat a eu lieu même si le profil est faux ou absent ; ces lignes
+  reçoivent age_group = "Inconnu" (4 175 achats).
+- products : left. Aucun KPI obligatoire n'utilise les colonnes produit, perdre ces ventes
+  n'apporterait rien.
+- merchants : inner. Le rapport 4.1 a besoin de la région, de la catégorie et d'un taux de
+  commission valide ; 3 133 achats (2,3 %) sont écartés. Résultat : 133 024 lignes.
+- Les trois petites tables sont diffusées (broadcast) si enable-broadcast = true.
+
+### Fenêtres des questions 3.2 et 3.3 
+- Calculées après les jointures : le rang va de 1 à n sans trou et user_tx_count
+  égale le nombre de lignes du client dans le tableau final.
+- Rang : row_number, ordre timestamp puis transaction_id (un numéro unique par achat).
+- Temps : secondes depuis 1970 calculées par TimeFeatures, sans fuseau horaire, pour un
+  résultat identique sur tous les PC (pas d'heure d'été, pas d'échec ANSI).
+- rolling_7d_amount : achats du client dans les 7 × 24 h qui précèdent, l'achat compris.
+- is_active_user : 1 si le client a acheté au moins 5 dates distinctes sur le jour de
+  l'achat et les 6 jours d'avant (1 070 achats, 508 clients).
+- days_since_prev_tx : écart en jours décimaux arrondi à 2 décimales, vide pour le
+  premier achat.
