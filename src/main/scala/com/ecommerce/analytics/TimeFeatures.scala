@@ -1,7 +1,7 @@
 package com.ecommerce.analytics
 // Propriétaire : Adji (membre B)
 
-import java.time.{DayOfWeek, LocalDateTime}
+import java.time.{DayOfWeek, LocalDateTime, ZoneOffset}
 import java.time.format.{DateTimeFormatter, ResolverStyle, TextStyle}
 import java.util.Locale
 
@@ -62,4 +62,14 @@ object TimeFeatures {
     df.withColumn("time_features", extractTimeFeatures(col("timestamp")))
       .select(col("*"), col("time_features.*"))
       .drop("time_features")
+
+  // Ajout du 22 octobre, pour les fenêtres de la question 3.3 (section B4).
+  // Le nombre de secondes écoulées depuis le 1er janvier 1970 à 0h00, l'heure étant lue
+  // telle qu'elle est écrite dans le fichier (aucun fuseau horaire, aucune heure d'été).
+  def epochSeconds(ts: String): Option[Long] =
+    Try(LocalDateTime.parse(ts, formatter).toEpochSecond(ZoneOffset.UTC)).toOption
+
+  // La même chose pour Spark. Spark sait lire une Option : None devient null.
+  val extractEpochSeconds: UserDefinedFunction =
+    udf((ts: String) => epochSeconds(ts))
 }
