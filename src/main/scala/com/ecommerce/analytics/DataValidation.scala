@@ -75,18 +75,42 @@ class DataValidation(spark: SparkSession) {
     ds.select(coalesce(sum(nullsInRow), lit(0L))).first().getLong(0)
   }
 
-  // Une ligne par dataset : (nom, lu, valides, rejetées)
-  def qualityReport(datasets: Seq[(String, Dataset[_], Dataset[_], DataFrame)]): DataFrame = {
+  // Bonus 2.5 : nombre de transactions dont la référence n'existe pas dans son référentiel
+  def countOrphans(transactions: Dataset[_], users: Dataset[_],
+                   products: Dataset[_], merchants: Dataset[_]): (Long, Long, Long) = {
+
+    def orphans(key: String, referential: Dataset[_]): Long =
+      transactions.select(key)
+        .join(referential.select(key), Seq(key), "left_anti")
+        .count()
+
+    (orphans("user_id", users), orphans("product_id", products), orphans("merchant_id", merchants))
+  }
+
+  // Une ligne par dataset : (nom, lu, valides, rejetées).
+  // orphans (bonus 2.5) est facultatif : sans lui, le rapport reste celui de la question 2.4.
+  def qualityReport(datasets: Seq[(String, Dataset[_], Dataset[_], DataFrame)],
+                    orphans: Option[(Long, Long, Long)] = None): DataFrame = {
     val lines = datasets.map { case (name, read, valid, rejected) =>
       (name, read.count(), valid.count(), rejected.count(), countNulls(read))
     }
-    lines
+    val base = lines
       .toDF("dataset", "nb_lignes_lues", "nb_lignes_valides", "nb_lignes_rejetees", "nb_valeurs_nulles")
       .withColumn("taux_rejet",
         when(col("nb_lignes_lues") === 0, lit(0.0))
           .otherwise(round(col("nb_lignes_rejetees") * 100.0 / col("nb_lignes_lues"), 2)))
       .select("dataset", "nb_lignes_lues", "nb_lignes_valides", "nb_lignes_rejetees",
         "taux_rejet", "nb_valeurs_nulles")
+
+    orphans match {
+      case Some((users, products, merchants)) =>
+        val isTransactions = col("dataset") === "transactions"
+        base
+          .withColumn("nb_user_id_orphelins",     when(isTransactions, lit(users)))
+          .withColumn("nb_product_id_orphelins",  when(isTransactions, lit(products)))
+          .withColumn("nb_merchant_id_orphelins", when(isTransactions, lit(merchants)))
+      case None => base
+    }
   }
 
   // Dossier de sortie + sous-dossier, avec ou sans "/" final dans application.conf

@@ -26,12 +26,13 @@ object TestFMC {
         val (prOk, prKo) = validation.validateProducts(pr)
         val (meOk, meKo) = validation.validateMerchants(me)
 
+        val orphans = validation.countOrphans(tx, us, pr, me)
         val report = validation.qualityReport(Seq(
           ("transactions", tx, txOk, txKo),
           ("users",        us, usOk, usKo),
           ("products",     pr, prOk, prKo),
           ("merchants",    me, meOk, meKo)
-        ))
+        ), Some(orphans))
         report.show(false)
         validation.saveQualityReport(report)
 
