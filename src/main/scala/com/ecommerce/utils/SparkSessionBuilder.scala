@@ -16,6 +16,7 @@ object SparkSessionBuilder {
     val masterDejaChoisi = sys.props.contains("spark.master")
     val builderComplet =
       if (masterDejaChoisi) builder
+
       else builder.master(ConfigLoader.sparkMaster)
 
     val spark = builderComplet.getOrCreate()
