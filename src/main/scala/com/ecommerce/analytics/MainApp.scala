@@ -1,6 +1,8 @@
 package com.ecommerce.analytics
+// Propriétaire : Bland (membre C). Intégration validée par les trois membres
 
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
+import org.apache.spark.sql.functions.col
 import com.ecommerce.utils.{ConfigLoader, SparkSessionBuilder}
 
 object MainApp {
@@ -69,7 +71,7 @@ object MainApp {
         val (prOk, prKo) = validation.validateProducts(pr)
         val (meOk, meKo) = validation.validateMerchants(me)
 
-        val orphans = validation.countOrphans(tx, us, pr, me)   // bonus 2.5
+        val orphans = validation.countOrphans(tx, us, pr, me)   // bonus 2.5 (FMC)
         val rapportQualite = validation.qualityReport(Seq(
           ("transactions", tx, txOk, txKo),
           ("users",        us, usOk, usKo),
@@ -86,13 +88,21 @@ object MainApp {
         // ---------- 3. Transformation (Adji) ----------
         println("\n=== 3. Transformation ===")
         val enrichi = SparkOptimizations.persistLarge(
-          transformation.addWindowFeatures(
-            transformation.enrichTransactionData(txOk, usOk, prOk, meOk)))
+          transformation.addSuspiciousFlags(                  // bonus 3.4
+            transformation.addWindowFeatures(                 // question 3.3
+              transformation.enrichTransactionData(txOk, usOk, prOk, meOk))))   // question 3.2
         println(s"Transactions enrichies : ${enrichi.count()} lignes, ${enrichi.columns.length} colonnes")
         enrichi.show(5)
 
         // Le tableau enrichi est en mémoire : les fichiers lus ne servent plus
         SparkOptimizations.release(tx, us, pr, me)
+
+        // Bonus 3.4 : les transactions suspectes
+        println(s"Transactions suspectes : ${enrichi.filter(col("is_suspicious") === 1).count()}")
+        enrichi.groupBy("suspicion_score").count().orderBy("suspicion_score").show()
+        val topSuspectes = transformation.topSuspicious(enrichi)
+        println("Les 20 transactions suspectes au montant le plus élevé :")
+        topSuspectes.show(truncate = false)
 
         // ---------- 4. Analytique (Bland) ----------
         println("\n=== 4. Analytique ===")
@@ -113,6 +123,7 @@ object MainApp {
         saveResult(kpiMarchands, "kpi_marchands")
         saveResult(cohortes, "cohortes")
         saveResult(meilleure, "meilleure_cohorte_3_mois")
+        saveResult(topSuspectes, "top20_transactions_suspectes")
         enrichi.write.mode(SaveMode.Overwrite).parquet(s"${outputDir}parquet/transactions_enrichies")
         println(s"[transactions_enrichies] écrit dans ${outputDir}parquet/transactions_enrichies")
 
