@@ -1,5 +1,5 @@
 package com.ecommerce.analytics
-//Fichier de test, rangé dans src/test/scala (hors du JAR)
+// Propriétaire : Adji (membre B). Fichier de test, rangé dans src/test/scala (hors du JAR)
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.col
@@ -12,7 +12,9 @@ object TestAdji {
       .appName("TestAdji")
       .master(ConfigLoader.sparkMaster)
       .config("spark.sql.shuffle.partitions", ConfigLoader.shufflePartitions.toString)
+      .config("spark.sql.debug.maxToStringFields", "100")
       .getOrCreate()
+
     spark.sparkContext.setLogLevel("WARN")
     import spark.implicits._
 
@@ -63,6 +65,12 @@ object TestAdji {
           .select("transaction_id", "timestamp", "amount", "age_group", "user_tx_rank", "user_tx_count",
             "rolling_7d_amount", "is_active_user", "days_since_prev_tx")
           .show(false)
+
+        // 3. Bonus 3.4 : les transactions suspectes
+        val avecSuspects = transformation.addSuspiciousFlags(complet).cache()
+        println(s"Transactions suspectes : ${avecSuspects.filter(col("is_suspicious") === 1).count()}")
+        avecSuspects.groupBy("suspicion_score").count().orderBy("suspicion_score").show()
+        transformation.topSuspicious(avecSuspects).show(false)
       }
     } finally {
       spark.stop()
