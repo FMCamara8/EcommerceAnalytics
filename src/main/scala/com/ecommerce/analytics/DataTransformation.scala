@@ -1,5 +1,4 @@
 package com.ecommerce.analytics
-// Propriétaire : Adji (membre B)
 
 import org.apache.spark.sql.{Column, DataFrame, Dataset}
 import org.apache.spark.sql.expressions.Window

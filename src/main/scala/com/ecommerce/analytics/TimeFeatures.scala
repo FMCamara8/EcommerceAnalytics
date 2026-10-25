@@ -1,5 +1,4 @@
 package com.ecommerce.analytics
-// Propriétaire : Adji (membre B)
 
 import java.time.{DayOfWeek, LocalDateTime, ZoneOffset}
 import java.time.format.{DateTimeFormatter, ResolverStyle, TextStyle}

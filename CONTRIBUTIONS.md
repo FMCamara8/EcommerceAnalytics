@@ -58,12 +58,24 @@ Difficultés rencontrées :
 - Le mode ANSI de Spark 4 fait planter une division par zéro : le taux de rejet est protégé par un `when`.
 - Un push refusé sur GitHub (historiques divergents), mal résolu par un push forcé, puis règle de groupe adoptée : `git pull --no-edit` avant chaque `git push`, jamais de push forcé.
 
-### Adji Ndioba Dia (membre B) : environ ??? heures
-(Tableau à insérer)
+### Adji Ndioba Dia (membre B) : environ 46 heures
+
+| Étape | Heures |
+| --- | --- |
+| Installation de l'environnement et premiers pas avec Spark et Scala | 4 |
+| UDF `extractTimeFeatures` et ses tests | 6 |
+| Jointures et enrichissement (3.2) | 5 |
+| Fonctions de fenêtrage (3.3) | 5 |
+| Bonus 3.4 | 4 |
 
 Difficultés rencontrées :
 
-- 
+- Le premier `TestAdji` ne compilait pas : il utilisait `SparkSessionBuilder`, un fichier de Bland pas encore récupéré avec `git pull`. Les tests ouvrent depuis leur propre session.
+- Les dates : il fallait une lecture stricte (un 31 février doit donner null), des noms de jours et de mois identiques sur tous les PC (`Locale.ENGLISH`) et une horloge sans fuseau horaire pour les fenêtres.
+- La fenêtre glissante de 7 jours se calcule sur des secondes avec `rangeBetween`, et non sur un nombre de lignes.
+- Le délai de 5 minutes du bonus 3.4 : `days_since_prev_tx`, arrondi en jours, ne permettait pas de le voir. Le délai a été recalculé en secondes.
+- La console remplie de lignes rouges INFO au démarrage, réglée par un fichier `log4j2.properties`.
+
 
 ### Blandine Mokam (membre C) : environ ??? heures
 (Tableau à insérer)
@@ -143,6 +155,9 @@ sans recompiler.
   six colonnes nulles sans faire échouer le job (700 cas dans le fichier brut).
 - La structure rendue par l'UDF est dépliée en six colonnes simples, car le CSV ne sait pas
   écrire une structure.
+- La plage 0h-6h n'appartient à aucune période du sujet : elle est classée Night, puisque
+    la nuit continue après minuit.
+- is_working_hours = 1 si 9 <= heure < 17 : une journée de travail se termine à 17h00.
 
 ### Journal de Spark 
 - Fichier log4j2.properties dans src/main/resources, niveau WARN : les ~40 lignes INFO
@@ -160,6 +175,10 @@ sans recompiler.
 - merchants : inner. Le rapport 4.1 a besoin de la région, de la catégorie et d'un taux de
   commission valide ; 3 133 achats (2,3 %) sont écartés. Résultat : 133 024 lignes.
 - Les trois petites tables sont diffusées (broadcast) si enable-broadcast = true.
+- Jeune : moins de 25 ans ; Adulte : 25 à 44 ; Âge Moyen : 45 à 64 ; Senior : 65 et plus.
+- Le sujet laisse 25 ans sans tranche (Jeune s'arrête avant 25, Adulte commence à 26).
+  Les 210 utilisateurs de 25 ans sont classés Adulte, ce qui garde intacte la règle
+  « moins de 25 ans ». Âge absent (jointure left) : Inconnu.
 
 ### Fenêtres des questions 3.2 et 3.3 
 - Calculées après les jointures : le rang va de 1 à n sans trou et user_tx_count
@@ -173,5 +192,12 @@ sans recompiler.
 - days_since_prev_tx : écart en jours décimaux arrondi à 2 décimales, vide pour le
   premier achat.
 
-## Relectures croisées
+### Transactions suspectes (bonus 3.4)
+- Panier moyen = moyenne de tous les achats du client dans le tableau final, achat compris.
+- Condition montant : écart non arrondi supérieur à 300 %, soit plus de 4 fois la moyenne.
+- Délai recalculé en secondes (lag sur l'horloge de TimeFeatures) : days_since_prev_tx,
+  arrondi en jours, ne permet pas de voir 5 minutes.
+- Chaque condition vaut when(condition, 1).otherwise(0) : une valeur vide (premier achat,
+  moyen de paiement absent) compte 0. Suspect si au moins deux conditions sur quatre.
+- Résultat : 2 943 transactions suspectes, chez 2 184 clients.
 
