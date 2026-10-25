@@ -14,35 +14,48 @@ object Analytics {
   // Question 4.1 : une ligne par marchand
   def merchantReport(df: DataFrame): DataFrame = {
 
+    // Bonus 4.1 : seulement si le tableau contient la colonne du bonus 3.4.
+    val avecSuspects = df.columns.contains("is_suspicious")
+
+    val comptesSuspects: Seq[Column] =
+      if (avecSuspects) Seq(
+        sum("is_suspicious").as("nb_transactions_suspectes"),
+        round(avg("is_suspicious") * 100, 2).as("taux_suspects"))
+      else Seq.empty
+
     // Temps 1 : une pile par marchand, et des comptes sur chaque pile
     val parMarchand = df
       .groupBy("merchant_id", "merchant_name", "merchant_category", "region", "commission_rate")
       .agg(
         round(sum("amount"), 2).as("chiffre_affaires"),
-        count("*").as("nb_transactions"),
-        count_distinct(col("user_id")).as("nb_clients_uniques"),
-        round(avg("amount"), 2).as("montant_moyen"),
-        round(sum(col("amount") * col("commission_rate")), 2).as("commission_totale"),
-        caTranche("Jeune").as("ca_jeune"),
-        caTranche("Adulte").as("ca_adulte"),
-        caTranche("Âge Moyen").as("ca_age_moyen"),
-        caTranche("Senior").as("ca_senior"),
-        caTranche("Inconnu").as("ca_inconnu")
+        (Seq(
+          count("*").as("nb_transactions"),
+          count_distinct(col("user_id")).as("nb_clients_uniques"),
+          round(avg("amount"), 2).as("montant_moyen"),
+          round(sum(col("amount") * col("commission_rate")), 2).as("commission_totale"),
+          caTranche("Jeune").as("ca_jeune"),
+          caTranche("Adulte").as("ca_adulte"),
+          caTranche("Âge Moyen").as("ca_age_moyen"),
+          caTranche("Senior").as("ca_senior"),
+          caTranche("Inconnu").as("ca_inconnu")
+        ) ++ comptesSuspects): _*
       )
 
     // Temps 2 : les classements, sur ce petit tableau d'une ligne par marchand
     val fenetreCategorie = Window.partitionBy("merchant_category").orderBy(col("chiffre_affaires").desc)
     val fenetreRegion    = Window.partitionBy("region").orderBy(col("chiffre_affaires").desc)
 
+    val colonnes = Seq(
+      "merchant_id", "merchant_name", "merchant_category", "region", "commission_rate",
+      "chiffre_affaires", "nb_transactions", "nb_clients_uniques", "montant_moyen", "commission_totale",
+      "rang_categorie", "rang_region",
+      "ca_jeune", "ca_adulte", "ca_age_moyen", "ca_senior", "ca_inconnu"
+    ) ++ (if (avecSuspects) Seq("nb_transactions_suspectes", "taux_suspects") else Seq.empty)
+
     parMarchand
       .withColumn("rang_categorie", rank().over(fenetreCategorie))
       .withColumn("rang_region", rank().over(fenetreRegion))
-      .select(
-        "merchant_id", "merchant_name", "merchant_category", "region", "commission_rate",
-        "chiffre_affaires", "nb_transactions", "nb_clients_uniques", "montant_moyen", "commission_totale",
-        "rang_categorie", "rang_region",
-        "ca_jeune", "ca_adulte", "ca_age_moyen", "ca_senior", "ca_inconnu"
-      )
+      .select(colonnes.map(nom => col(nom)): _*)
       .orderBy(col("chiffre_affaires").desc, col("merchant_id"))
   }
 
