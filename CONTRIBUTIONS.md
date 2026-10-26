@@ -58,7 +58,7 @@ Difficultés rencontrées :
 - Le mode ANSI de Spark 4 fait planter une division par zéro : le taux de rejet est protégé par un `when`.
 - Un push refusé sur GitHub (historiques divergents), mal résolu par un push forcé, puis règle de groupe adoptée : `git pull --no-edit` avant chaque `git push`, jamais de push forcé.
 
-### Adji Ndioba Dia (membre B) : environ 46 heures
+### Adji Ndioba Dia (membre B) : environ 24 heures
 
 | Étape | Heures |
 | --- | --- |
