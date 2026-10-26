@@ -264,18 +264,32 @@ sans recompiler.
 
 ## Relectures croisées
 
+### Partie 2 (Fodé Mamoudou Camara), relue par Adji Ndioba Dia
+- Date : 26 octobre 2026
+- Ce qui a été lu et lancé : `Models.scala`, `DataIngestion.scala` et `DataValidation.scala`, puis `TestFMC`. Chiffres retrouvés : transactions 138 047 lues, 136 157 valides, 1 890 rejetées ; users 12 000, 11 655, 345 ; products 6 000, 5 821, 179 ; merchants 600, 586, 14. Valides + rejetées = lues pour les quatre fichiers. Rapport de qualité et lignes rejetées ouverts dans `output/`.
+- Remarques : une ligne qui enfreint deux règles n'est comptée qu'une fois, sous la première règle violée ; le choix est compris, il évite de compter deux fois une même ligne. Cohérence avec la partie 3 vérifiée : les 4 175 achats classés « Inconnu » en 3.2 regroupent les achats orphelins et ceux des utilisateurs rejetés, les deux chiffres ne se contredisent donc pas.
+- Suite donnée : aucune modification du code.
+
+
 ### Partie 3 (Adji Ndioba Dia), relue par Fodé Mamoudou Camara
 - Date : 26 octobre 2026
 - Ce qui a été lu et lancé : `TimeFeatures.scala` et le module de jointures et de fenêtres, puis `TestAdji` et le pipeline complet. Chiffres retrouvés : 133 024 lignes et 35 colonnes dans le tableau enrichi, 1 070 achats actifs pour 508 clients, 2 943 transactions suspectes (bonus 3.4).
 - Remarques : une date impossible (31 février) donne bien six colonnes nulles au lieu d'être corrigée. Question posée sur la jointure inner avec merchants, qui écarte 3 133 achats (2,3 %) : Adji l'a justifiée par le besoin de la région et de la commission en 4.1.
 - Suite donnée : justification de la jointure inner écrite dans les décisions d'Adji ; pas de modification du code.
 
+### Partie 4 (Blandine Mokam), relue par Adji Ndioba Dia
+- Date : 26 octobre 2026
+- Ce qui a été lu et lancé : le module des KPI et des cohortes, puis les résultats dans `output/`. M00225 arrive en tête : 592 105,25 €, 383 transactions, 351 clients, 4,7 % de transactions suspectes. Cohorte 202401 : 679, 292 puis 214 clients ; meilleure rétention à 3 mois pour la cohorte 202506 (36,2 %).
+- Remarques : le taux de suspects de 4.1 utilise bien la colonne produite par la partie 3, ce qui relie les deux modules. Les 9 marchands valides sans région sont classés entre eux dans une région vide : à savoir expliquer à l'oral. Les cohortes d'octobre à décembre 2025 n'ont pas encore de troisième mois observé et sont exclues du classement à 3 mois, sinon elles fausseraient le résultat.
+- Suite donnée : ces deux points sont écrits dans les décisions de Bland.
+
+
 ### Partie 5 (Blandine Mokam), relue par Fodé Mamoudou Camara et Adji Ndioba Dia
 - le JAR deux fois avec spark-submit, d'abord normalement, puis avec `--driver-java-options "-Dapp.optimization.enable-cache=false -Dapp.optimization.enable-broadcast=false"`.
 - Remarques de FMC : les deux versions donnent les mêmes résultats (mêmes nombres de lignes, même tête du classement des marchands) ; seule la durée change. Trois lancements de chaque, en alternant, chronométrés dans PowerShell : 57, 60 et 71 secondes avec les optimisations (médiane 60 s), 86, 102 et 97 secondes sans (médiane 97 s), soit environ 38 % de temps en moins. Le cache et le broadcast ont été coupés ensemble, la mesure ne sépare donc pas l'effet de chacun. Premier essai raté et instructif : `--driver-java-options` placé après le JAR est transmis au programme et non à spark-submit, l'option était ignorée sans message d'erreur.
-- Ce qui a été lu par Adji Ndioba Dia : À COMPLÉTER
-- Remarques d'Adji Ndioba Dia : À COMPLÉTER
-- Suite donnée : À COMPLÉTER
+- Ce qui a été lu par Adji Ndioba Dia : `SparkSessionBuilder` et les appels à cache, persist, unpersist et broadcast dans `MainApp`.
+- Remarques d'Adji Ndioba Dia : chaque tableau mis en cache est bien libéré par unpersist quand il ne sert plus. Les 8 partitions de shuffle conviennent au mode local et seraient à augmenter sur un cluster.
+- Suite donnée : aucune modification du code.
 
 ### Parties 1 et 7 (Fodé Mamoudou Camara), relues par Blandine Mokam
 - Date : 26 octobre 2026
