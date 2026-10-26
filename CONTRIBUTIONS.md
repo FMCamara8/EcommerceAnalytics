@@ -264,6 +264,11 @@ sans recompiler.
 
 ## Relectures croisées
 
+### Parties 1 et 7 (Fodé Mamoudou Camara), relues par Blandine Mokam
+- Date : 26 octobre 2026
+- Ce qui a été lu et lancé : `build.sbt`, `project/plugins.sbt`, `application.conf` et `ConfigLoader.scala`. `sbt clean assembly`, puis contrôle du JAR obtenu (`target/scala-2.13/EcommerceAnalytics.jar`, 0,38 Mo) : il contient nos classes et Typesafe Config, mais ni Spark, ni Scala, ni le dossier `data`.
+- Remarques : une clé supprimée de `application.conf` est remplacée par la valeur de secours de `ConfigLoader`, sans arrêt du programme ; une clé surchargée au lancement avec `-D` prend bien le dessus sur le fichier. Une configuration de lancement IntelliJ créée à la main ne coche pas la case « provided » : `MainApp` s'arrête alors sur `NoClassDefFoundError`, comme lors de notre premier lancement. IntelliJ étant l'environnement commun du groupe, proposé : le signaler dans le README.
+- Suite donnée : rubrique « Lancer depuis IntelliJ » ajoutée au README par FMC (case « provided », options Java 21, dossier de travail).
 ### Partie 2 (Fodé Mamoudou Camara), relue par Adji Ndioba Dia
 - Date : 26 octobre 2026
 - Ce qui a été lu et lancé : `Models.scala`, `DataIngestion.scala` et `DataValidation.scala`, puis `TestFMC`. Chiffres retrouvés : transactions 138 047 lues, 136 157 valides, 1 890 rejetées ; users 12 000, 11 655, 345 ; products 6 000, 5 821, 179 ; merchants 600, 586, 14. Valides + rejetées = lues pour les quatre fichiers. Rapport de qualité et lignes rejetées ouverts dans `output/`.
@@ -291,10 +296,5 @@ sans recompiler.
 - Remarques d'Adji Ndioba Dia : chaque tableau mis en cache est bien libéré par unpersist quand il ne sert plus. Les 8 partitions de shuffle conviennent au mode local et seraient à augmenter sur un cluster.
 - Suite donnée : aucune modification du code.
 
-### Parties 1 et 7 (Fodé Mamoudou Camara), relues par Blandine Mokam
-- Date : 26 octobre 2026
-- Ce qui a été lu et lancé : `build.sbt`, `project/plugins.sbt`, `application.conf` et `ConfigLoader.scala`. `sbt clean assembly`, puis contrôle du JAR obtenu (`target/scala-2.13/EcommerceAnalytics.jar`, 0,38 Mo) : il contient nos classes et Typesafe Config, mais ni Spark, ni Scala, ni le dossier `data`.
-- Remarques : une clé supprimée de `application.conf` est remplacée par la valeur de secours de `ConfigLoader`, sans arrêt du programme ; une clé surchargée au lancement avec `-D` prend bien le dessus sur le fichier. Une configuration de lancement IntelliJ créée à la main ne coche pas la case « provided » : `MainApp` s'arrête alors sur `NoClassDefFoundError`, comme lors de notre premier lancement. Proposé : le signaler dans le README.
-- Suite donnée : À COMPLÉTER (par exemple « ajouté au README par FMC » ou « laissé tel quel, la commande officielle est spark-submit »)
 
 
