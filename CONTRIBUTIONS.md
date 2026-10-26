@@ -261,3 +261,18 @@ sans recompiler.
 - spark.sql.debug.maxToStringFields = 100 : le journal ne coupe plus le plan d'exécution.
 - Imports des fonctions Spark en liste explicite (functions.{col, when, ...}), règle
   adoptée ensuite par tout le groupe.
+
+## Relectures croisées
+
+### Partie 3 (Adji Ndioba Dia), relue par Fodé Mamoudou Camara
+- Date : 26 octobre 2026
+- Ce qui a été lu et lancé : `TimeFeatures.scala` et le module de jointures et de fenêtres, puis `TestAdji` et le pipeline complet. Chiffres retrouvés : 133 024 lignes et 35 colonnes dans le tableau enrichi, 1 070 achats actifs pour 508 clients, 2 943 transactions suspectes (bonus 3.4).
+- Remarques : une date impossible (31 février) donne bien six colonnes nulles au lieu d'être corrigée. Question posée sur la jointure inner avec merchants, qui écarte 3 133 achats (2,3 %) : Adji l'a justifiée par le besoin de la région et de la commission en 4.1.
+- Suite donnée : justification de la jointure inner écrite dans les décisions d'Adji ; pas de modification du code.
+
+### Partie 5 (Blandine Mokam), relue par Fodé Mamoudou Camara et Adji Ndioba Dia
+- le JAR deux fois avec spark-submit, d'abord normalement, puis avec `--driver-java-options "-Dapp.optimization.enable-cache=false -Dapp.optimization.enable-broadcast=false"`.
+- Remarques de FMC : les deux versions donnent les mêmes résultats (mêmes nombres de lignes, même tête du classement des marchands) ; seule la durée change. Trois lancements de chaque, en alternant, chronométrés dans PowerShell : 57, 60 et 71 secondes avec les optimisations (médiane 60 s), 86, 102 et 97 secondes sans (médiane 97 s), soit environ 38 % de temps en moins. Le cache et le broadcast ont été coupés ensemble, la mesure ne sépare donc pas l'effet de chacun. Premier essai raté et instructif : `--driver-java-options` placé après le JAR est transmis au programme et non à spark-submit, l'option était ignorée sans message d'erreur.
+- Ce qui a été lu par Adji Ndioba Dia : À COMPLÉTER
+- Remarques d'Adji Ndioba Dia : À COMPLÉTER
+- Suite donnée : À COMPLÉTER
