@@ -87,6 +87,21 @@ chemins au lancement :
 
 Le `--master` donné à `spark-submit` est prioritaire sur celui d'`application.conf`.
 
+## Lancer depuis IntelliJ
+
+spark-submit reste la façon officielle de lancer le projet. Pour lancer `MainApp` depuis IntelliJ pendant le développement, la configuration de lancement doit être réglée une fois :
+
+1. Cliquer sur le triangle vert à gauche de `object MainApp`, puis sur Modify Run Configuration.
+2. Dans Modify options, cocher Add dependencies with "provided" scope to classpath. Spark est déclaré « provided » dans `build.sbt` : sans cette case, IntelliJ ne le trouve pas et le programme s'arrête sur `NoClassDefFoundError: org/apache/spark/sql/SparkSession$`.
+3. Dans le même menu, cocher Add VM options et coller la ligne suivante, qui ouvre à Spark les parties de Java 21 dont il a besoin :
+
+```
+--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+```
+
+4. Vérifier que Working directory vaut `$PROJECT_DIR$` : les chemins des données sont relatifs à la racine du projet.
+5. Apply, puis Run.
+
 ## Résultats
 
 Le dossier de sortie (par défaut `output/`) contient :
