@@ -77,12 +77,24 @@ Difficultés rencontrées :
 - La console remplie de lignes rouges INFO au démarrage, réglée par un fichier `log4j2.properties`.
 
 
-### Blandine Mokam (membre C) : environ ??? heures
-(Tableau à insérer)
+### Blandine Mokam (membre C) : environ 28 heures
+
+| Étape | Heures |
+| --- | --- |
+| Installation de l'environnement et premiers pas avec Spark et Scala | 4 |
+| `SparkSessionBuilder` et KPI par marchand (4.1) | 6 |
+| Analyse de cohortes (4.2) | 5 |
+| Optimisations (5.1 et 5.2) | 4 |
+| `MainApp`, intégration des trois modules, écriture des résultats | 6 |
+| Puces bonus de 4.1 et 4.2 | 3 |
 
 Difficultés rencontrées :
 
-- 
+- `NoClassDefFoundError: org/apache/spark/sql/SparkSession$` au premier lancement de `MainApp` : la configuration créée par IntelliJ n'avait ni la case « provided » ni les options Java 21.
+- 9 marchands valides n'ont pas de région. La validation 2.2 ne contrôle que la commission : ils restent dans le rapport, classés entre eux dans une région vide.
+- Les cohortes d'octobre à décembre 2025 n'ont pas encore de troisième mois observé. Elles sont exclues du classement « meilleure rétention à 3 mois ».
+- Un avertissement qui coupait la description du plan d'exécution dans le journal, réglé par `spark.sql.debug.maxToStringFields = 100`.
+- Brancher les fonctions des deux autres membres dans `MainApp` sans casser leurs tests.
 
 
 ## Décisions techniques du groupe
@@ -201,3 +213,51 @@ sans recompiler.
   moyen de paiement absent) compte 0. Suspect si au moins deux conditions sur quatre.
 - Résultat : 2 943 transactions suspectes, chez 2 184 clients.
 
+### KPI par marchand (question 4.1)
+- Les comptes sont faits par groupBy, puis les classements par fenêtre sur ce tableau d'une
+  ligne par marchand : pour classer un marchand, il faut d'abord connaître son CA total.
+- Classements avec rank : deux marchands ex aequo ont la même place, et le résultat est le
+  même à chaque lancement (row_number les départagerait au hasard).
+- « Dans sa catégorie » désigne merchant_category, la catégorie du marchand, et non celle
+  de chaque produit vendu.
+- CA par tranche d'âge par somme conditionnelle (when / otherwise 0) plutôt que pivot :
+  noms de colonnes sans accent ni espace, et 0 au lieu d'une case vide.
+- nb_clients_uniques compte les user_id distincts, orphelins compris ; commission totale
+  = somme de amount × commission_rate ; arrondis à 2 décimales en fin de calcul.
+- 9 marchands valides n'ont pas de région (la validation 2.2 ne contrôle que la commission) :
+  ils restent dans le rapport et sont classés entre eux, dans une région vide.
+- Bonus : nb_transactions_suspectes et taux_suspects ne sont ajoutés que si le tableau reçu
+  contient is_suspicious. Taux global : 2,2 %.
+
+### Analyse de cohortes (question 4.2)
+- Le mois vient des 6 premiers caractères du timestamp (yyyyMM) : les mois en texte anglais
+  de l'UDF se trieraient par ordre alphabétique.
+- period_index est calculé sur un numéro de mois (année × 12 + mois), pour passer
+  correctement de décembre 2024 à janvier 2025.
+- Utilisateurs comptés avec count_distinct ; la taille initiale de chaque cohorte est
+  recollée à la matrice par broadcast (24 lignes seulement).
+- Meilleure rétention à 3 mois : les cohortes d'octobre à décembre 2025 sont exclues, car
+  leur troisième mois n'est pas encore observé. Résultat : 202506, 36,2 %.
+- Bonus : chiffre d'affaires et revenu moyen par utilisateur pour chaque cohorte et période.
+
+### Optimisations (questions 5.1 et 5.2)
+- cache sur les quatre fichiers lus et sur les rapports 4.1 et 4.2, utilisés plusieurs fois.
+- persist(MEMORY_AND_DISK_SER) sur le tableau enrichi (133 024 lignes, 35 colonnes) : s'il
+  ne tient pas en mémoire, il déborde sur le disque au lieu d'être recalculé.
+- unpersist dès qu'un tableau ne sert plus, pour libérer la mémoire.
+- broadcast des petites tables dans les jointures, et spark.sql.shuffle.partitions = 8 au
+  lieu de 200 : 200 morceaux seraient presque vides pour 138 000 lignes.
+- Cache et broadcast se coupent avec enable-cache et enable-broadcast dans
+  application.conf ; les résultats restent identiques, seule la durée change.
+
+### Application principale (question 6.1)
+- SparkSessionBuilder ne prend le master d'application.conf que si spark-submit n'en a pas
+  donné : un master écrit dans le code empêcherait de lancer le JAR sur un cluster.
+- Le pipeline tourne dans un try/catch/finally : spark.stop() dans le finally, code de
+  sortie 1 en cas d'échec.
+- Chaque résultat est écrit en CSV (un seul fichier, coalesce(1)) et en Parquet, dans
+  output/csv/<nom> et output/parquet/<nom>, en mode overwrite. Le tableau enrichi n'est
+  écrit qu'en Parquet.
+- spark.sql.debug.maxToStringFields = 100 : le journal ne coupe plus le plan d'exécution.
+- Imports des fonctions Spark en liste explicite (functions.{col, when, ...}), règle
+  adoptée ensuite par tout le groupe.
